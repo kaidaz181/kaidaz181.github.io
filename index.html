@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AllForOne Posts — patched</title>
+  <style>
+    /* (kept your original styles + small additions for new controls) */
+    
+    /* active toolbar style for heading button */
+.format-toolbar .tool-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+    
+    .fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.fullscreen-content {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 6px;
+}
+.fullscreen-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 32px;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+
+    
+    * { box-sizing: border-box; }
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 24px;
+      border-radius: 16px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    h1 { margin: 0; font-size: 1.75rem; font-weight: 700; letter-spacing: -0.025em; }
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: var(--shadow-lg); }
+    .btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn:hover:not(:disabled) { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { background: white; color: var(--primary); border: 2px solid var(--primary); }
+    .btn-secondary:hover:not(:disabled) { background: #f0f1ff; }
+    .btn-small { padding: 6px 12px; font-size: 0.85rem; }
+    .danger { background: transparent; color: #c33; border: 1px solid #f5c6c6; }
+    textarea { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--border); font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s; background: var(--bg); min-height: 100px; resize: vertical; }
+    textarea:focus { outline: none; border-color: var(--primary); background: white; }
+    input[type="file"] { margin: 12px 0; padding: 10px; border: 2px dashed var(--border); border-radius: 10px; width: 100%; cursor: pointer; transition: border-color 0.2s; }
+    input[type="file"]:hover { border-color: var(--primary); }
+    input[type="text"], input[type="password"] { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--border); font-family: inherit; font-size: 0.95rem; transition: border-color 0.2s; background: var(--bg); }
+    input[type="text"]:focus, input[type="password"]:focus { outline: none; border-color: var(--primary); background: white; }
+    .post-actions { display: flex; gap: 12px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+    .post-media { max-width: 100%; height: auto; border-radius: 12px; margin-top: 16px; display: block; cursor: pointer; transition: opacity 0.2s; }
+    .post-media:hover { opacity: 0.9; }
+    .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #ec4899); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem; }
+    .author-info { flex: 1; }
+    .author-name { font-weight: 600; color: var(--text); display: block; }
+    .post-time { font-size: 0.85rem; color: var(--text-muted); }
+    .caption { margin: 12px 0; color: var(--text); line-height: 1.5; }
+    .stats { display: flex; gap: 16px; font-size: 0.9rem; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); align-items:center; }
+    .comments-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .comment { padding: 12px; background: var(--bg); border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .comment-info { flex: 1; }
+    .comment-author { font-weight: 600; color: var(--text); font-size: 0.9rem; }
+    .comment-text { color: var(--text); margin-top: 4px; font-size: 0.9rem; }
+    .comment-input { display: flex; gap: 8px; margin-top: 12px; }
+    .progress { width: 100%; height: 8px; background: var(--border); border-radius: 10px; overflow: hidden; margin-top: 12px; }
+    .progress > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), #8b5cf6); transition: width 300ms; border-radius: 10px; }
+    .status-text { color: var(--text-muted); font-size: 0.9rem; margin-top: 8px; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty-state-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.5; }
+    footer { margin-top: 40px; padding: 20px; background: var(--card-bg); border-radius: 12px; color: var(--text-muted); font-size: 0.85rem; text-align: center; border: 1px solid var(--border); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal { background: var(--card-bg); border-radius: 20px; padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); animation: modalSlideIn 0.3s ease-out; }
+    @keyframes modalSlideIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .modal-header { margin-bottom: 20px; }
+    .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--text); margin: 0 0 8px 0; }
+    .modal-subtitle { color: var(--text-muted); font-size: 0.95rem; margin: 0; }
+    .modal-body { margin-bottom: 24px; }
+    .modal-input { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid var(--border); font-family: inherit; font-size: 1rem; transition: all 0.2s; background: var(--bg); margin-bottom: 12px; }
+    .modal-input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+    .modal-footer { display: flex; gap: 12px; justify-content: flex-end; }
+    .modal-error { background: #fee; color: #c33; padding: 12px; border-radius: 10px; font-size: 0.9rem; margin-bottom: 16px; border: 1px solid #fcc; }
+    .modal-remember { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 0.95rem; color: var(--text-muted); }
+    .post-admin-actions { display:flex; gap:8px; flex-wrap:wrap; margin-left: auto; }
+    .small-muted { font-size:0.85rem; color:var(--text-muted); }
+    .fullscreen-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .fullscreen-overlay.active { display: flex; }
+    .fullscreen-content { max-width: 95vw; max-height: 95vh; object-fit: contain; }
+    .fullscreen-close { position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 2001; }
+    .fullscreen-close:hover { background: white; }
+    .paste-hint { font-size: 0.85rem; color: var(--text-muted); margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+    .image-preview { margin-top: 12px; border-radius: 12px; max-width: 100%; display: none; position: relative; }
+    .image-preview img { max-width: 100%; border-radius: 12px; border: 2px solid var(--border); }
+    .image-preview .remove-image { position: absolute; top: 8px; right: 8px; background: rgba(255, 255, 255, 0.95); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); transition: all 0.2s; }
+    .image-preview .remove-image:hover { background: white; transform: scale(1.1); }
+    /* toolbar styles */
+    .format-toolbar { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center; }
+    .format-toolbar .tool-btn { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:transparent; cursor:pointer; font-weight:600; }
+    .announcement-banner { background:#fff9e6; border:1px solid #ffe6a7; padding:8px 12px; border-radius:10px; font-weight:700; color:#8a5a00; margin-bottom:12px; }
+    /* list modal styles (for likes list) */
+    .list-modal { max-width: 520px; width: 100%; padding: 20px 20px 16px 20px; border-radius: 12px; }
+    .likes-list { max-height: 320px; overflow:auto; margin-top: 8px; }
+    .likes-item { padding:8px 10px; border-radius:8px; border:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; gap:10px; background: #fff; }
+  </style>
+</head>
+<body>
+  
+  <header>
+    <h1>🌟 AllForOne Posts</h1>
+    <div id="headerControls" style="display:flex;gap:8px;align-items:center">
+      <!-- dynamic controls appear here when logged in -->
+    </div>
+  </header>
+
+  <section class="card" id="createCard">
+    <div id="selectUser">
+      <div style="margin-bottom: 16px">
+        <h3 style="margin: 0 0 8px 0; font-size: 1.1rem">Post as:</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0">Choose your name to post</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px">
+        <button class="btn user-select-btn" data-user="Kai">👤 Kai</button>
+        <button class="btn user-select-btn" data-user="Levi">👤 Levi</button>
+        <button class="btn user-select-btn" data-user="Owen">👤 Owen</button>
+        <button class="btn user-select-btn" data-user="Felix">👤 Felix</button>
+        <button class="btn user-select-btn" data-user="Kayden">👤 Kayden</button>
+        <button class="btn user-select-btn" data-user="Aidan">👤 Aidan</button>
+      </div>
+    </div>
+
+    <div id="postForm" style="display:none">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border)">
+        <div class="avatar" id="currentUserAvatar"></div>
+        <div>
+          <div style="font-weight: 600; color: var(--text)" id="currentUserName"></div>
+          <div style="margin-top:4px; display:flex; gap:8px; align-items:center">
+            <button id="btnSwitchUser" class="btn btn-small btn-secondary">Switch User</button>
+            <button id="btnResetPassword" class="btn btn-small">Reset Password</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- format toolbar -->
+      <div class="format-toolbar" id="formatToolbar" style="display:none">
+        <button type="button" class="tool-btn" data-cmd="h1">H1</button>
+        <button type="button" class="tool-btn" data-cmd="h2">H2</button>
+        <button type="button" class="tool-btn" data-cmd="b"><strong>B</strong></button>
+        <button type="button" class="tool-btn" data-cmd="i"><em>I</em></button>
+        <button type="button" class="tool-btn" id="btnLink">Link</button>
+        <label style="display:flex;align-items:center;gap:6px"><input type="color" id="colorPicker" value="#ff0000" title="Pick a color"> Color</label>
+        <label id="announcementLabel" style="display:none;margin-left:auto;align-items:center;gap:8px">
+          <input type="checkbox" id="announcementCheckbox"> <span class="small-muted">Make announcement</span>
+        </label>
+      </div>
+
+      <textarea id="caption" placeholder="What's on your mind?"></textarea>
+      <div id="livePreview" class="card" style="margin-top:12px; display:none;">
+  <div style="font-weight:600; margin-bottom:8px;">Live preview</div>
+  <div id="previewContent" class="caption" style="white-space:pre-wrap;"></div>
+</div>
+      <div class="paste-hint">
+        💡 <span>Tip: You can paste images directly with Ctrl+V or ⌘+V</span>
+      </div>
+
+      <div class="image-preview" id="imagePreview">
+        <img id="previewImg" src="" alt="Preview">
+        <button class="remove-image" id="removeImage">×</button>
+      </div>
+      <input id="fileInput" type="file" accept="image/*,video/*">
+      <div class="post-actions">
+        <button id="btnPost" class="btn">📤 Post</button>
+        <span id="uploadStatus" class="status-text"></span>
+      </div>
+      <div class="progress" id="prog" hidden><div></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2 style="margin:20px 0 16px 0; font-size:1.3rem; font-weight:700">Feed</h2>
+    <div id="feed">
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-state-icon">⏳</div>
+          <p>Loading posts...</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <strong>⚠️ Security Note:</strong> This app uses an unsigned Cloudinary upload preset. Anyone who knows the preset name can upload files. Please monitor your Cloudinary dashboard and enable moderation/upload limits.
+  </footer>
+
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">Enter Password</h3>
+        <p class="modal-subtitle" id="modalSubtitle"></p>
+      </div>
+      <div class="modal-body">
+        <div id="modalError" class="modal-error" style="display: none;"></div>
+        <input type="password" class="modal-input" id="modalInput" placeholder="Enter password">
+        <input type="password" class="modal-input" id="modalConfirmInput" placeholder="Confirm password" style="display: none;">
+        <label class="modal-remember" style="display:block">
+          <input type="checkbox" id="modalRemember"> Remember me on this device
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+        <button class="btn" id="modalSubmit">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- simple list modal used to show likes (re-usable) -->
+  <div id="listModal" class="modal-overlay">
+    <div class="modal list-modal">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h3 class="modal-title" id="listModalTitle">List</h3>
+          <p class="modal-subtitle" id="listModalSubtitle"></p>
+        </div>
+        <button id="listModalClose" class="btn btn-small btn-secondary">Close</button>
+      </div>
+      <div class="modal-body">
+        <div id="listModalContent" class="likes-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW: generic dialog overlay replacing alert/confirm/prompt -->
+  <div id="dialogOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
+      <div class="modal-header">
+        <h3 class="modal-title" id="dialogTitle">Dialog</h3>
+        <p class="modal-subtitle" id="dialogSubtitle"></p>
+      </div>
+      <div class="modal-body">
+        <div id="dialogMessage" style="margin-bottom:12px;color:var(--text);"></div>
+        <input type="text" id="dialogInput" class="modal-input" style="display:none" />
+      </div>
+      <div class="modal-footer" id="dialogFooter">
+        <button class="btn btn-secondary" id="dialogCancel" style="display:none">Cancel</button>
+        <button class="btn" id="dialogOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="fullscreenOverlay" class="fullscreen-overlay" tabindex="-1">
+    <button class="fullscreen-close" id="fullscreenClose">×</button>
+    <img id="fullscreenImage" class="fullscreen-content" style="display: none;">
+    <video id="fullscreenVideo" class="fullscreen-content" controls style="display: none;"></video>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+  console.log('=== SCRIPT STARTING (patched) ===');
+
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDzQlAqhCeytCLEYafboYGpFu6pY3Kv9WE",
+    authDomain: "allforonemedia-9a7d8.firebaseapp.com",
+    projectId: "allforonemedia-9a7d8",
+    storageBucket: "allforonemedia-9a7d8.firebasestorage.app",
+    messagingSenderId: "892787060584",
+    appId: "1:892787060584:web:e65609062592f9ba96f0dd",
+    measurementId: "G-JSXKLMBRLC"
+  };
+  const CLOUDINARY_CLOUD = "dgrmpcha9";
+  const CLOUDINARY_PRESET = "AllForOne Posts";
+  const MAX_IMAGE_DIM = 1600;
+  const COOKIE_NAME = 'af1_session';
+  const COOKIE_DAYS = 30;
+  const LOCAL_KEY = 'af1_session_ls';
+
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  console.log('=== FIREBASE INITIALIZED ===');
+
+  let currentUser = null;
+  let currentUserObj = null; // holds user doc data like isAdmin
+  let pastedFile = null;
+
+  const selectUser = document.getElementById('selectUser');
+  const postForm = document.getElementById('postForm');
+  const currentUserAvatar = document.getElementById('currentUserAvatar');
+  const currentUserName = document.getElementById('currentUserName');
+  const btnSwitchUser = document.getElementById('btnSwitchUser');
+  const btnPost = document.getElementById('btnPost');
+  const captionEl = document.getElementById('caption');
+  const fileInput = document.getElementById('fileInput');
+  const uploadStatus = document.getElementById('uploadStatus');
+  const prog = document.getElementById('prog');
+  const progBar = prog.querySelector('div');
+  const feedEl = document.getElementById('feed');
+  const headerControls = document.getElementById('headerControls');
+  const imagePreview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImg');
+  const removeImage = document.getElementById('removeImage');
+
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalSubtitle = document.getElementById('modalSubtitle');
+  const modalError = document.getElementById('modalError');
+  const modalInput = document.getElementById('modalInput');
+  const modalConfirmInput = document.getElementById('modalConfirmInput');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalSubmit = document.getElementById('modalSubmit');
+  const modalRemember = document.getElementById('modalRemember');
+  const btnResetPassword = document.getElementById('btnResetPassword');
+
+  const listModal = document.getElementById('listModal');
+  const listModalTitle = document.getElementById('listModalTitle');
+  const listModalSubtitle = document.getElementById('listModalSubtitle');
+  const listModalContent = document.getElementById('listModalContent');
+  const listModalClose = document.getElementById('listModalClose');
+
+  const dialogOverlay = document.getElementById('dialogOverlay');
+  const dialogTitle = document.getElementById('dialogTitle');
+  const dialogSubtitle = document.getElementById('dialogSubtitle');
+  const dialogMessage = document.getElementById('dialogMessage');
+  const dialogInput = document.getElementById('dialogInput');
+  const dialogOk = document.getElementById('dialogOk');
+  const dialogCancel = document.getElementById('dialogCancel');
+
+  const fullscreenOverlay = document.getElementById('fullscreenOverlay');
+  const fullscreenClose = document.getElementById('fullscreenClose');
+  const fullscreenImage = document.getElementById('fullscreenImage');
+  const fullscreenVideo = document.getElementById('fullscreenVideo');
+
+  const formatToolbar = document.getElementById('formatToolbar');
+  const announcementLabel = document.getElementById('announcementLabel');
+  const announcementCheckbox = document.getElementById('announcementCheckbox');
+  const colorPicker = document.getElementById('colorPicker');
+  const btnLink = document.getElementById('btnLink');
+
+  console.log('=== DOM ELEMENTS LOADED ===');
+
+  // generic dialog API (same as your original showDialog)
+  function showDialog(options) {
+    return new Promise(function(resolve) {
+      const type = options.type || 'alert';
+      dialogTitle.textContent = options.title || (type === 'prompt' ? 'Input' : (type === 'confirm' ? 'Confirm' : 'Notice'));
+      dialogSubtitle.textContent = options.subtitle || '';
+      dialogMessage.innerHTML = options.message ? escapeHtml(options.message).replace(/\n/g,'<br>') : '';
+      dialogInput.style.display = 'none';
+      dialogCancel.style.display = 'none';
+      dialogOk.textContent = (type === 'alert') ? 'OK' : (type === 'confirm' ? 'OK' : 'Submit');
+
+      if (type === 'prompt') {
+        dialogInput.style.display = 'block';
+        dialogInput.value = options.defaultValue || '';
+        dialogInput.placeholder = options.placeholder || '';
+      }
+
+      if (type === 'confirm' || type === 'prompt') {
+        dialogCancel.style.display = 'inline-flex';
+      }
+
+      function cleanup() {
+        dialogOverlay.classList.remove('active');
+        dialogOk.removeEventListener('click', onOk);
+        dialogCancel.removeEventListener('click', onCancel);
+        dialogInput.removeEventListener('keydown', onKeyDown);
+        document.removeEventListener('keydown', onDocKey);
+      }
+
+      function onOk() {
+        if (type === 'prompt') {
+          const v = dialogInput.value;
+          cleanup();
+          resolve(v);
+        } else if (type === 'confirm') {
+          cleanup();
+          resolve(true);
+        } else {
+          cleanup();
+          resolve(true);
+        }
+      }
+      function onCancel() {
+        cleanup();
+        if (type === 'prompt') resolve(null);
+        else resolve(false);
+      }
+
+      function onKeyDown(e) {
+        if (e.key === 'Enter') onOk();
+        else if (e.key === 'Escape') onCancel();
+      }
+      function onDocKey(e) {
+        if (e.key === 'Escape') onCancel();
+      }
+
+      dialogOk.addEventListener('click', onOk);
+      dialogCancel.addEventListener('click', onCancel);
+      dialogInput.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keydown', onDocKey);
+
+      dialogOverlay.classList.add('active');
+      setTimeout(function() {
+        if (type === 'prompt') dialogInput.focus();
+        else dialogOk.focus();
+      }, 80);
+    });
+  }
+
+  function hideDialog() { dialogOverlay.classList.remove('active'); }
+
+  // --- other helpers (fullscreen, paste, cookies, etc) ---
+  async function showFullscreen(url, isVideo) {
+    if (isVideo) {
+      fullscreenImage.style.display = 'none';
+      fullscreenVideo.style.display = 'block';
+      fullscreenVideo.src = url;
+      fullscreenOverlay.classList.add('active');
+      try { if (fullscreenVideo.requestFullscreen) await fullscreenVideo.requestFullscreen(); } catch(e){console.warn(e)}
+    } else {
+      fullscreenVideo.style.display = 'none';
+      fullscreenImage.style.display = 'block';
+      fullscreenImage.src = url;
+      fullscreenOverlay.classList.add('active');
+    }
+  }
+  function hideFullscreen() { try { if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});}catch(e){} fullscreenOverlay.classList.remove('active'); fullscreenVideo.pause(); fullscreenVideo.src=''; fullscreenImage.src=''; }
+  fullscreenClose.addEventListener('click', hideFullscreen);
+  fullscreenOverlay.addEventListener('click', function(e){ if (e.target===fullscreenOverlay) hideFullscreen(); });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape' && fullscreenOverlay.classList.contains('active')) hideFullscreen(); });
+
+  document.addEventListener('paste', function(e) {
+    if (!currentUser) return;
+    if (e.target !== captionEl) return;
+    var items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        e.preventDefault();
+        var blob = items[i].getAsFile();
+        handlePastedImage(blob);
+        break;
+      }
+    }
+  });
+  function handlePastedImage(blob) {
+    pastedFile = new File([blob], 'pasted-image.png', { type: blob.type });
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      previewImg.src = e.target.result;
+      imagePreview.style.display = 'block';
+      fileInput.value = '';
+    };
+    reader.readAsDataURL(blob);
+  }
+  removeImage.addEventListener('click', function(){ pastedFile=null; imagePreview.style.display='none'; previewImg.src=''; fileInput.value=''; });
+  fileInput.addEventListener('change', function(){ if (fileInput.files[0]) { pastedFile=null; imagePreview.style.display='none'; previewImg.src=''; } });
+
+  function setCookie(name, value, days) { try { var expires=''; if(days){var d=new Date(); d.setTime(d.getTime()+(days*24*60*60*1000)); expires='; expires='+d.toUTCString();} document.cookie = name+'='+encodeURIComponent(value)+expires+'; path=/; SameSite=None; Secure'; return true;}catch(e){console.warn(e);return false} }
+  function getCookie(name) { try { var nameEQ = name+'='; var ca = document.cookie.split(';'); for(var i=0;i<ca.length;i++){var c=ca[i]; while(c.charAt(0)===' ') c=c.substring(1,c.length); if(c.indexOf(nameEQ)===0) return decodeURIComponent(c.substring(nameEQ.length,c.length));} return null;}catch(e){console.warn(e);return null} }
+  function eraseCookie(name){ try{ document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=None; Secure"; }catch(e){console.warn(e);} }
+  function setSessionStorage(obj){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(obj)); return true;}catch(e){console.warn(e); return false;} }
+  function getSessionStorage(){ try{ var r=localStorage.getItem(LOCAL_KEY); if(!r) return null; return JSON.parse(r);}catch(e){console.warn(e); return null;} }
+  function clearSessionStorage(){ try{ localStorage.removeItem(LOCAL_KEY);}catch(e){console.warn(e);} }
+
+  function setSessionCookie(userName, password){ try{ var payload={username:userName,password:btoa(password)}; setCookie(COOKIE_NAME, JSON.stringify(payload), COOKIE_DAYS); setSessionStorage(payload);}catch(e){console.warn(e);} }
+  function readSessionPayload(){ var ls=getSessionStorage(); if(ls && ls.username) return ls; var cookie=getCookie(COOKIE_NAME); if(!cookie) return null; try{return JSON.parse(cookie);}catch(e){try{return JSON.parse(decodeURIComponent(cookie))}catch(e2){console.warn(e,e2);return null}} }
+  function clearSession(){ eraseCookie(COOKIE_NAME); clearSessionStorage(); }
+
+  // showModal (login) - same as original
+  function showModal(title, subtitle, needsConfirm) {
+    return new Promise(function(resolve, reject) {
+      modalTitle.textContent = title;
+      modalSubtitle.textContent = subtitle;
+      modalInput.value = '';
+      modalConfirmInput.value = '';
+      modalError.style.display = 'none';
+      modalConfirmInput.style.display = needsConfirm ? 'block' : 'none';
+      if (modalRemember) modalRemember.checked = false;
+      modalOverlay.classList.add('active');
+      setTimeout(function() { modalInput.focus(); }, 100);
+
+      function handleSubmit() {
+        var value = modalInput.value.trim();
+        var confirmValue = modalConfirmInput.value.trim();
+        var remember = !!(modalRemember && modalRemember.checked);
+
+        if (!value) { modalError.textContent='Please enter a password'; modalError.style.display='block'; return; }
+        if (needsConfirm && value !== confirmValue) { modalError.textContent='Passwords do not match!'; modalError.style.display='block'; return; }
+        if (value.length < 4) { modalError.textContent='Password must be at least 4 characters'; modalError.style.display='block'; return; }
+
+        cleanup();
+        resolve({ value: value, remember: remember });
+      }
+
+      function handleCancel() { cleanup(); reject(new Error('Cancelled')); }
+      function handleKeyPress(e) { if (e.key === 'Enter') handleSubmit(); else if (e.key === 'Escape') handleCancel(); }
+
+      function cleanup() {
+        modalOverlay.classList.remove('active');
+        modalSubmit.removeEventListener('click', handleSubmit);
+        modalCancel.removeEventListener('click', handleCancel);
+        modalInput.removeEventListener('keypress', handleKeyPress);
+        modalConfirmInput.removeEventListener('keypress', handleKeyPress);
+      }
+
+      modalSubmit.addEventListener('click', handleSubmit);
+      modalCancel.addEventListener('click', handleCancel);
+      modalInput.addEventListener('keypress', handleKeyPress);
+      modalConfirmInput.addEventListener('keypress', handleKeyPress);
+    });
+  }
+
+  function showModalError(message) { modalError.textContent=message; modalError.style.display='block'; }
+  function hideModal(){ modalOverlay.classList.remove('active'); }
+
+// image resize/upload & renderFormatted, escapeHtml — safe versions
+function escapeHtml(unsafe) {
+  if (!unsafe && unsafe !== '') return '';
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function renderFormatted(raw) {
+  if (!raw) return '';
+  var s = escapeHtml(raw);
+
+  // headings [h1]..[h6]
+  s = s.replace(/\[h([1-6])\](.*?)\[\/h\1\]/gis, function(m, lvl, inner) {
+    return '<h' + lvl + '>' + inner + '</h' + lvl + '>';
+  });
+
+  // bold
+  s = s.replace(/\[b\](.*?)\[\/b\]/gis, function(m, inner) {
+    return '<strong>' + inner + '</strong>';
+  });
+
+  // italics
+  s = s.replace(/\[i\](.*?)\[\/i\]/gis, function(m, inner) {
+    return '<em>' + inner + '</em>';
+  });
+
+  // links [link=https://example.com]text[/link]
+  s = s.replace(/\[link=(.*?)\](.*?)\[\/link\]/gis, function(m, url, text) {
+    url = url.trim();
+    if (!/^https?:\/\//i.test(url)) return text; // safety
+    var safeUrl = url.replace(/"/g, '%22');
+    return '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + text + '</a>';
+  });
+
+  // color [color=#aabbcc]text[/color] or [color=red]
+  s = s.replace(/\[color=(.*?)\](.*?)\[\/color\]/gis, function(m, col, inner) {
+    col = col.trim();
+    var hexMatch = col.match(/^#?[0-9a-fA-F]{3,6}$/);
+    var nameMatch = col.match(/^[a-zA-Z]+$/);
+    if (hexMatch) {
+      var val = col.charAt(0) === '#' ? col : ('#' + col);
+      return '<span style="color:' + val + ';">' + inner + '</span>';
+    }
+    if (nameMatch) {
+      return '<span style="color:' + col + ';">' + inner + '</span>';
+    }
+    return inner;
+  });
+
+  // preserve newlines
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+
+  async function resizeImageIfNeeded(file, maxDim) {
+    if (!file.type || !file.type.startsWith('image/')) return file;
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+          var w = img.width; var h = img.height;
+          if (w <= maxDim && h <= maxDim) { resolve(file); return; }
+          var ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio); h = Math.round(h * ratio);
+          var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+          canvas.toBlob(function(blob){ var newFile = new File([blob], file.name, { type: file.type || 'image/jpeg' }); resolve(newFile); }, file.type || 'image/jpeg', 0.85);
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadToCloudinary(file, onProgress) {
+    var url = 'https://api.cloudinary.com/v1_1/' + encodeURIComponent(CLOUDINARY_CLOUD) + '/upload';
+    var fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    return new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.upload.onprogress = function(e) { if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100)); };
+      xhr.onload = function() { if (xhr.status>=200 && xhr.status<300) { try{ resolve(JSON.parse(xhr.responseText)); }catch(err){reject(err);} } else reject(new Error('Upload failed: '+xhr.statusText)); };
+      xhr.onerror = function(){ reject(new Error('Upload request failed.')); };
+      xhr.send(fd);
+    });
+  }
+
+  // -- posting logic (same as original) --
+  btnPost.onclick = async function() {
+    if (!currentUser) { await showDialog({ type: 'alert', title: 'Sign in', message: 'Please select a user first.' }); return; }
+    var captionRaw = captionEl.value.trim();
+    var file = pastedFile || fileInput.files[0];
+
+    btnPost.disabled = true;
+    uploadStatus.textContent = '';
+    prog.hidden = true;
+    progBar.style.width = '0%';
+
+    try {
+      var media = [];
+      if (file) {
+        uploadStatus.textContent = 'Preparing media...';
+        var fileToUpload = await resizeImageIfNeeded(file, MAX_IMAGE_DIM);
+        uploadStatus.textContent = 'Uploading...';
+        var res = await uploadToCloudinary(fileToUpload, function(p) {
+          prog.hidden = false;
+          progBar.style.width = p + '%';
+          uploadStatus.textContent = 'Uploading ' + p + '%';
+        });
+        media.push({
+          url: res.secure_url,
+          public_id: res.public_id,
+          resource_type: res.resource_type,
+          format: res.format,
+          bytes: res.bytes
+        });
+      }
+
+      var isAnnouncement = !!(announcementCheckbox && announcementCheckbox.checked && currentUserObj && currentUserObj.isAdmin);
+
+      await db.collection('posts').add({
+        authorId: currentUser,
+        authorName: currentUser,
+        captionRaw: captionRaw || '',
+        media: media,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        likeCount: 0,
+        isAnnouncement: isAnnouncement
+      });
+
+      captionEl.value = '';
+      fileInput.value = '';
+      pastedFile = null;
+      imagePreview.style.display = 'none';
+      uploadStatus.textContent = '✅ Posted successfully!';
+      announcementCheckbox.checked = false;
+      loadFeed();
+    } catch (err) {
+      console.error(err);
+      await showDialog({ type: 'alert', title: 'Post Error', message: 'Error posting: ' + (err.message || err) });
+      uploadStatus.textContent = '❌ Error';
+    } finally {
+      btnPost.disabled = false;
+      setTimeout(function() {
+        uploadStatus.textContent = '';
+        prog.hidden = true;
+        progBar.style.width = '0%';
+      }, 2000);
+    }
+  };
+
+  // delete helpers
+  async function deleteSubcollectionDocs(parentRef, subName) {
+    try {
+      var snap = await parentRef.collection(subName).get();
+      if (snap.empty) return;
+      var batch = db.batch();
+      snap.forEach(function(d){ batch.delete(d.ref); });
+      await batch.commit();
+    } catch(e){ console.warn('deleteSubcollectionDocs error for', subName, e); }
+  }
+
+  async function deletePost(postId) {
+    try {
+      var confirmed = await showDialog({ type: 'confirm', title: 'Delete Post', message: 'Delete this post? This will remove comments and likes too.' });
+      if (!confirmed) return;
+      var postRef = db.collection('posts').doc(postId);
+      await deleteSubcollectionDocs(postRef, 'likes');
+      await deleteSubcollectionDocs(postRef, 'comments');
+      await postRef.delete();
+      loadFeed();
+    } catch (e) {
+      console.error('deletePost failed', e);
+      await showDialog({ type: 'alert', title: 'Delete Failed', message: 'Failed to delete post' });
+    }
+  }
+
+  async function deleteComment(postId, commentId) {
+    try {
+      var confirmed = await showDialog({ type: 'confirm', title: 'Delete Comment', message: 'Delete this comment?' });
+      if (!confirmed) return;
+      var commentRef = db.collection('posts').doc(postId).collection('comments').doc(commentId);
+      await commentRef.delete();
+      var commentsListEl = document.getElementById('comments-' + postId);
+      if (commentsListEl) loadComments(postId, commentsListEl);
+    } catch (e) {
+      console.error('deleteComment failed', e);
+      await showDialog({ type: 'alert', title: 'Delete Failed', message: 'Failed to delete comment' });
+    }
+  }
+
+  // view likes
+  async function viewLikes(postId) {
+    try {
+      listModalTitle.textContent = 'Likes';
+      listModalSubtitle.textContent = '';
+      listModalContent.innerHTML = '<div style="color:var(--text-muted)">Loading likes…</div>';
+      listModal.classList.add('active');
+
+      var likesSnap = await db.collection('posts').doc(postId).collection('likes').orderBy('createdAt', 'desc').get();
+      if (likesSnap.empty) {
+        listModalContent.innerHTML = '<div style="color:var(--text-muted)">No likes yet</div>';
+        return;
+      }
+      var html = '';
+      likesSnap.forEach(function(d) {
+        var l = d.data();
+        var who = l.userId || l.userName || 'Unknown';
+        html += '<div class="likes-item"><div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#ec4899);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;">' + escapeHtml((who+'').charAt(0).toUpperCase()) + '</div><div>' + escapeHtml(who) + '<div style="font-size:0.85rem;color:var(--text-muted);">';
+        if (l.createdAt && l.createdAt.seconds) {
+          html += new Date(l.createdAt.seconds * 1000).toLocaleString();
+        }
+        html += '</div></div></div>';
+      });
+      listModalContent.innerHTML = html;
+    } catch (e) {
+      console.error('viewLikes failed', e);
+      listModalContent.innerHTML = '<div style="color:var(--text-muted)">Error loading likes</div>';
+    }
+  }
+
+  listModalClose.addEventListener('click', function(){ listModal.classList.remove('active'); });
+  listModal.addEventListener('click', function(e){ if (e.target === listModal) listModal.classList.remove('active'); });
+
+  // load feed & render
+  async function loadFeed() {
+    feedEl.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-state-icon">⏳</div><p>Loading posts...</p></div></div>';
+    try {
+      var snap = await db.collection('posts').orderBy('createdAt', 'desc').limit(30).get();
+      if (snap.empty) {
+        feedEl.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-state-icon">📭</div><p>No posts yet</p><p style="font-size:0.9rem;color:var(--text-muted)">Be the first to share something!</p></div></div>';
+        return;
+      }
+      feedEl.innerHTML = '';
+      snap.forEach(function(docSnap){ renderPost(docSnap.id, docSnap.data()); });
+    } catch (e) {
+      console.error(e);
+      feedEl.innerHTML = '<div class="card"><div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Error loading feed</p></div></div>';
+    }
+  }
+
+  function renderPost(postId, data) {
+    var card = document.createElement('div'); card.className='card';
+
+    if (data.isAnnouncement) {
+      var ann = document.createElement('div'); ann.className='announcement-banner'; ann.textContent='📢 Announcement'; card.appendChild(ann);
+    }
+
+    var header = document.createElement('div'); header.className='post-header';
+    var avatar = document.createElement('div'); avatar.className='avatar';
+    var name = (data.authorName || data.authorId || 'Unknown') + '';
+    avatar.textContent = (name+'').charAt(0).toUpperCase();
+
+    var authorInfo = document.createElement('div'); authorInfo.className='author-info';
+    var authorName = document.createElement('span'); authorName.className='author-name'; authorName.textContent = name;
+    var postTime = document.createElement('span'); postTime.className='post-time'; postTime.textContent = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString() : 'Just now';
+    authorInfo.appendChild(authorName); authorInfo.appendChild(document.createElement('br')); authorInfo.appendChild(postTime);
+    header.appendChild(avatar); header.appendChild(authorInfo);
+
+    // admin actions
+    var adminActions = document.createElement('div'); adminActions.className='post-admin-actions';
+
+    // Robust permission check (falls back to authorName/author)
+    var authorIdRaw = ((data.authorId || data.authorName || data.author) + '').toString().trim();
+    var currentIdRaw = ((currentUser || '') + '').toString().trim();
+    var canDeletePost = false;
+    if (currentIdRaw) {
+      if (currentIdRaw === authorIdRaw) canDeletePost = true;
+      if (currentUserObj && currentUserObj.isAdmin) canDeletePost = true;
+    }
+
+    // View likes button
+    var viewLikesBtn = document.createElement('button'); viewLikesBtn.className='btn btn-small btn-secondary'; viewLikesBtn.textContent='👥 View Likes'; viewLikesBtn.onclick = function(){ viewLikes(postId); };
+    adminActions.appendChild(viewLikesBtn);
+
+    // Delete button (modal confirm)
+    if (canDeletePost) {
+      var delBtn = document.createElement('button'); delBtn.className='btn btn-small danger'; delBtn.textContent='🗑 Delete Post';
+      delBtn.onclick = async function(e) {
+        e.stopPropagation();
+        try {
+          var confirmed = await showDialog({ type: 'confirm', title: 'Delete Post', message: 'Delete this post? This will remove comments and likes too.' });
+          if (!confirmed) return;
+          var postRef = db.collection('posts').doc(postId);
+          await deleteSubcollectionDocs(postRef, 'likes');
+          await deleteSubcollectionDocs(postRef, 'comments');
+          await postRef.delete();
+          await showDialog({ type: 'alert', title: 'Deleted', message: 'Post deleted.' });
+          loadFeed();
+        } catch (err) {
+          console.error('delete via button failed', err);
+          await showDialog({ type: 'alert', title: 'Delete Failed', message: 'Failed to delete post' });
+        }
+      };
+      adminActions.appendChild(delBtn);
+    }
+
+    if (adminActions.children.length) header.appendChild(adminActions);
+    card.appendChild(header);
+
+    if (data.captionRaw) {
+      var caption = document.createElement('div'); caption.className='caption'; caption.innerHTML = renderFormatted(data.captionRaw); card.appendChild(caption);
+    }
+
+    if (Array.isArray(data.media) && data.media.length) {
+      data.media.forEach(function(m) {
+        var el; var isVideo = m.resource_type === 'video' || (m.url && m.url.match(/\.(mp4|webm)/i));
+        if (isVideo) {
+          el = document.createElement('video'); el.controls = true; el.src = m.url; el.className='post-media';
+          el.onclick = function(e){ showFullscreen(m.url, true); e.stopPropagation(); };
+        } else {
+          el = document.createElement('img'); el.src = m.url; el.className='post-media'; el.onclick = function(){ showFullscreen(m.url, false); };
+        }
+        card.appendChild(el);
+      });
+    }
+
+    var stats = document.createElement('div'); stats.className='stats';
+    var likeCountSpan = document.createElement('span'); likeCountSpan.textContent = '❤️ ' + (data.likeCount || 0) + ' likes'; likeCountSpan.style.cursor='pointer'; likeCountSpan.title='Click to view who liked this post'; likeCountSpan.onclick = function(){ viewLikes(postId); };
+    stats.appendChild(likeCountSpan); card.appendChild(stats);
+
+    var actions = document.createElement('div'); actions.className='post-actions';
+    var likeBtn = document.createElement('button'); likeBtn.className='btn btn-small'; likeBtn.textContent='❤️ Like';
+    var commentBtn = document.createElement('button'); commentBtn.className='btn btn-small btn-secondary'; commentBtn.textContent='💬 Comment';
+    actions.appendChild(likeBtn); actions.appendChild(commentBtn); card.appendChild(actions);
+
+    var commentsSection = document.createElement('div'); commentsSection.className='comments-section'; commentsSection.style.display='none';
+    var commentsList = document.createElement('div'); commentsList.id = 'comments-' + postId;
+    var commentInput = document.createElement('div'); commentInput.className='comment-input';
+    var cinput = document.createElement('input'); cinput.type='text'; cinput.placeholder='Write a comment...'; cinput.style.flex='1';
+    var csend = document.createElement('button'); csend.className='btn btn-small'; csend.textContent='Send';
+    commentInput.appendChild(cinput); commentInput.appendChild(csend);
+    commentsSection.appendChild(commentsList); commentsSection.appendChild(commentInput); card.appendChild(commentsSection);
+
+    likeBtn.onclick = async function() {
+      if (!currentUser) { await showDialog({ type: 'alert', title: 'Sign in', message: 'Please select a user to like posts' }); return; }
+      try {
+        var likesRef = db.collection('posts').doc(postId).collection('likes');
+        var likesSnap = await likesRef.where('userId','==',currentUser).get();
+        if (!likesSnap.empty) {
+          var toDelete = likesSnap.docs[0].ref; await toDelete.delete();
+          await db.collection('posts').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(-1) });
+        } else {
+          await likesRef.add({ userId: currentUser, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          await db.collection('posts').doc(postId).update({ likeCount: firebase.firestore.FieldValue.increment(1) });
+        }
+        loadFeed();
+      } catch(e){ console.error(e); await showDialog({ type: 'alert', title: 'Like Error', message: 'Error liking post' }); }
+    };
+
+    commentBtn.onclick = function() {
+      var isHidden = commentsSection.style.display === 'none';
+      commentsSection.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) loadComments(postId, commentsList);
+    };
+
+    csend.onclick = async function() {
+      if (!currentUser) { await showDialog({ type: 'alert', title: 'Sign in', message: 'Please select a user to comment' }); return; }
+      var txt = cinput.value.trim();
+      if (!txt) return;
+      try {
+        await db.collection('posts').doc(postId).collection('comments').add({ authorId: currentUser, authorName: currentUser, text: txt, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        cinput.value = ''; loadComments(postId, commentsList);
+      } catch (e) { console.error(e); await showDialog({ type: 'alert', title: 'Comment Error', message: 'Error posting comment' }); }
+    };
+
+    feedEl.appendChild(card);
+  }
+
+  async function loadComments(postId, container) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:0.9rem">Loading comments...</div>';
+    try {
+      var snap = await db.collection('posts').doc(postId).collection('comments').orderBy('createdAt','asc').limit(200).get();
+      if (snap.empty) { container.innerHTML = '<div style="color:var(--text-muted);font-size:0.9rem">No comments</div>'; return; }
+      container.innerHTML = '';
+      snap.forEach(function(d) {
+        var c = d.data(); var id = d.id;
+        var el = document.createElement('div'); el.className='comment';
+        var info = document.createElement('div'); info.className='comment-info';
+        info.innerHTML = '<div class="comment-author">' + escapeHtml(c.authorName || c.authorId) + '</div><div class="comment-text">' + escapeHtml(c.text) + '</div>';
+        el.appendChild(info);
+        var canDeleteComment = false;
+        if (currentUser && (currentUser === c.authorId || (currentUserObj && currentUserObj.isAdmin))) canDeleteComment = true;
+        if (canDeleteComment) {
+          var btn = document.createElement('button'); btn.className='btn btn-small danger'; btn.style.marginLeft='8px'; btn.textContent='Delete';
+          btn.onclick = function() { deleteComment(postId, id); };
+          el.appendChild(btn);
+        }
+        container.appendChild(el);
+      });
+    } catch (e) { console.error(e); container.innerHTML = '<div style="color:var(--text-muted);font-size:0.9rem">Comments error</div>'; }
+  }
+
+  console.log('=== SETUP COMPLETE ===');
+
+  // select user flow
+  selectUser.addEventListener('click', function(e){
+    var btn = e.target.closest('.user-select-btn'); if(!btn) return; var userName = btn.dataset.user; selectUserWithPassword(userName).catch(()=>{});
+  });
+
+  async function loadUserDoc(userName) {
+    try { var ref = db.collection('users').doc(userName); var doc = await ref.get(); if (!doc.exists) return null; return doc.data(); } catch(e){ console.warn('loadUserDoc failed', e); return null;}
+  }
+
+  async function selectUserWithPassword(userName, providedPassword = null, providedRemember = false) {
+    try {
+      var userDocRef = db.collection('users').doc(userName);
+      var userDoc = await userDocRef.get();
+      var userData = userDoc.exists ? userDoc.data() : null;
+
+      if (userDoc.exists && userData.hasPassword) {
+        var storedPassword = userData.password;
+        if (providedPassword !== null) {
+          var enteredPassword = providedPassword;
+          if (enteredPassword !== storedPassword) {
+            console.warn('Stored session password mismatch, clearing stored session for', userName);
+            clearSession();
+            providedPassword = null;
+          } else {
+            currentUser = userName; currentUserObj = userData || null;
+            if (providedRemember) setSessionCookie(userName, enteredPassword);
+            showUserUI(userName);
+            loadFeed(); // ensure feed re-renders with delete buttons visible
+            return;
+          }
+        }
+
+        try {
+          var result = await showModal('Welcome back, ' + userName + '!', 'Enter your password to continue', false);
+          var entered = result.value; var remember = result.remember;
+          if (entered !== storedPassword) { await showDialog({ type: 'alert', title: 'Incorrect Password', message: 'Incorrect password!' }); return; }
+          currentUser = userName; currentUserObj = userData || null; if (remember) setSessionCookie(userName, entered);
+          showUserUI(userName); loadFeed(); return;
+        } catch (err) { console.log('User cancelled login for', userName); return; }
+      } else {
+        try {
+          var result = await showModal('Hi ' + userName + '! 👋', 'Set up a password for your account (min 4 characters)', true);
+          var newPassword = result.value; var remember = result.remember;
+          await userDocRef.set({ name: userName, password: newPassword, hasPassword: true, isAdmin: (userData && userData.isAdmin) ? true : false, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+          if (remember) setSessionCookie(userName, newPassword);
+          modalTitle.textContent = '✅ Success!'; modalSubtitle.textContent = 'Your password has been set';
+          modalInput.style.display='none'; modalConfirmInput.style.display='none'; modalSubmit.style.display='none'; modalCancel.style.display='none';
+          setTimeout(function(){ hideModal(); modalInput.style.display='block'; modalSubmit.style.display='inline-flex'; modalCancel.style.display='inline-flex'; }, 1200);
+          currentUser = userName; currentUserObj = { name: userName, isAdmin: false }; showUserUI(userName); loadFeed(); return;
+        } catch (err) { console.log('User cancelled password setup for', userName); return; }
+      }
+    } catch (error) { console.error('Error selecting user:', error); await showDialog({ type: 'alert', title: 'Error', message: 'Error: ' + (error.message || error) }); }
+  }
+
+  function showUserUI(userName) {
+    selectUser.style.display='none'; postForm.style.display='block'; currentUserAvatar.textContent = userName.charAt(0); currentUserName.textContent = userName;
+    renderHeaderControls();
+    formatToolbar.style.display='flex';
+    if (currentUserObj && currentUserObj.isAdmin) { announcementLabel.style.display='flex'; } else { announcementLabel.style.display='none'; }
+    // important: re-render the feed after signing in so post-level controls (delete) are refreshed
+    loadFeed();
+  }
+
+  btnSwitchUser.addEventListener('click', function(){ currentUser=null; currentUserObj=null; selectUser.style.display='block'; postForm.style.display='none'; captionEl.value=''; fileInput.value=''; pastedFile=null; imagePreview.style.display='none'; renderHeaderControls(); formatToolbar.style.display='none'; loadFeed(); });
+
+  function renderHeaderControls() {
+    headerControls.innerHTML = '';
+    if (!currentUser) return;
+    var span = document.createElement('div'); span.className='small-muted'; span.textContent = 'Signed in as ' + currentUser; headerControls.appendChild(span);
+    var btnLogout = document.createElement('button'); btnLogout.className='btn btn-small btn-secondary'; btnLogout.textContent='Log out';
+    btnLogout.onclick = function(){ clearSession(); currentUser=null; currentUserObj=null; selectUser.style.display='block'; postForm.style.display='none'; loadFeed(); renderHeaderControls(); };
+    headerControls.appendChild(btnLogout);
+  }
+
+  btnResetPassword.addEventListener('click', async function() {
+    if (!currentUser) { await showDialog({ type: 'alert', title: 'No user', message: 'No user selected' }); return; }
+    try {
+      var result = await showModal('Reset password for ' + currentUser, 'Enter a new password', true);
+      var newPass = result.value;
+      await db.collection('users').doc(currentUser).update({ password: newPass, hasPassword: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      setSessionCookie(currentUser, newPass);
+      modalTitle.textContent='✅ Password updated'; modalSubtitle.textContent='Your password was updated successfully';
+      modalInput.style.display='none'; modalConfirmInput.style.display='none'; modalSubmit.style.display='none'; modalCancel.style.display='none';
+      setTimeout(function(){ hideModal(); modalInput.style.display='block'; modalSubmit.style.display='inline-flex'; modalCancel.style.display='inline-flex'; }, 1000);
+    } catch(e){ console.log('Password reset cancelled or failed', e); }
+  });
+
+  // auto-login flow (attempt session)
+  (async function autoLoginFromCookie() {
+    try {
+      var payload = readSessionPayload();
+      if (!payload || !payload.username) { loadFeed(); return; }
+      var username = payload.username;
+      var password = payload.password ? atob(payload.password) : null;
+      if (!password) {
+        try {
+          var userDoc = await db.collection('users').doc(username).get();
+          if (userDoc.exists && userDoc.data().hasPassword) { loadFeed(); return; }
+          else { currentUser = username; currentUserObj = userDoc.exists ? userDoc.data() : null; showUserUI(username); loadFeed(); return; }
+        } catch (e) { console.warn('Auto login fetch failed', e); loadFeed(); return; }
+      }
+      await selectUserWithPassword(username, password, true);
+    } catch (e) { console.warn('Auto-login failed', e); }
+    finally { loadFeed(); }
+  })();
+
+  </script>
+</body>
+</html>
