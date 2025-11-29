@@ -4,37 +4,182 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Lag Controller</title>
+
 <style>
-  /* Minimal extracted styles (transparent background) */
-  *{box-sizing:border-box}
-  :root{--primary:#6366f1;--text:#eaf5ff}
-  html,body{height:100%;margin:0;background:transparent;font-family:monospace, "Courier New", monospace;color:var(--text)}
-  .panel{max-width:720px;margin:20px auto;padding:12px;border-radius:8px;background:transparent}
-  h1{margin:0 0 12px;font-size:18px;font-weight:700}
-  .controller{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .slider-wrap{flex:1;min-width:220px}
-  input[type="range"]{width:100%}
-  .value{min-width:64px;text-align:center;font-weight:700;font-size:16px}
-  .btn{padding:8px 12px;border-radius:8px;border:0;background:var(--primary);color:white;cursor:pointer;font-weight:700}
-  .note{margin-top:12px;color:#b8c4c9;font-size:13px}
+/* General resets */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #007aff;
+  --accent: #34c759;
+  --danger: #ff3b30;
+  --text: #1c1c1e;
+}
+
+/* Body & panel wrapper */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  color: var(--text);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Slider panel */
+.panel {
+  width: 90%;
+  max-width: 720px;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  margin-bottom: 24px;
+}
+.panel h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+.controller {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.slider-wrap { flex: 1; min-width: 240px; }
+input[type="range"] {
+  width: 100%;
+  cursor: pointer;
+}
+.value-display {
+  min-width: 60px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.note {
+  margin-top: 12px;
+  font-size: 13px;
+  color: rgba(28,28,30,0.6);
+}
+    
+    /* Indicator glow effect */
+.indicator {
+  position: absolute;
+  top: -14px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+/* Glow styles applied via JS */
+.indicator.glow-good { box-shadow: 0 0 12px 3px rgba(52,199,89,0.7); } /* green */
+.indicator.glow-ok   { box-shadow: 0 0 12px 3px rgba(255,214,10,0.7); } /* yellow */
+.indicator.glow-bad  { box-shadow: 0 0 12px 3px rgba(255,59,48,0.7); }  /* red */
+
+
+/* Gauge panel */
+.wrap {
+  width: 90%;
+  max-width: 720px;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+.wrap h1 {
+  font-weight: 600;
+  font-size: 20px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+}
+
+/* Gauge styles */
+.gauge {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: rgba(200,200,200,0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 12px 0 0 12px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+.fill.bad { background: var(--danger); }
+.indicator {
+  position: absolute;
+  top: -14px;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+.value {
+  margin-top: 16px;
+  font-weight: 500;
+  font-size: 16px;
+  text-align: center;
+}
+.legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 13px;
+  color: rgba(28,28,30,0.6);
+}
 </style>
 </head>
 <body>
-  <div class="panel">
-    <h1>Lag Level Controller</h1>
-    <div class="controller">
-      <div class="slider-wrap">
-        <input id="slider" type="range" min="0" max="100" step="1" value="0" />
-      </div>
-      <div class="value" id="val">0</div>
-      <button id="writeNow" class="btn" style="display:none">Set</button>
+
+<!-- Slider Controller Panel -->
+<div class="panel">
+  <h1>Lag Level Controller</h1>
+  <div class="controller">
+    <div class="slider-wrap">
+      <input id="slider" type="range" min="0" max="100" step="1" value="0">
     </div>
-    <div class="note">Drag the slider and release (let go) to update the live display.</div>
+    <div class="value-display" id="val">0</div>
   </div>
+  <div class="note">Drag the slider and release to update the live value.</div>
+</div>
+
+<!-- Live Gauge Panel -->
+<div class="wrap">
+  <h1>SERVER LAG — Live</h1>
+  <div class="gauge" id="gauge">
+    <div class="fill" id="fill"></div>
+    <div class="indicator" id="indicator">Good</div>
+  </div>
+  <div class="value" id="valueLabel">Lag level: 0</div>
+  <div class="legend"><div>0 (no lag)</div><div>100 (max lag)</div></div>
+</div>
 
 <script type="module">
+    
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDzQlAqhCeytCLEYafboYGpFu6pY3Kv9WE",
@@ -50,36 +195,60 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+const fillEl = document.getElementById('fill');
+const indicatorEl = document.getElementById('indicator');
+const valueLabel = document.getElementById('valueLabel');
+const gaugeEl = document.getElementById('gauge');
 const slider = document.getElementById('slider');
-const val = document.getElementById('val');
+const valDisplay = document.getElementById('val');
 
-function writeLagLevel(v){
-  const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
-  set(ref(db, 'lag/level'), n).catch(err => {
-    console.error('Write failed', err);
-    alert('Failed to write to Firebase. Check DB rules and network.');
-  });
+function updateUI(v){
+  fillEl.style.width = v + '%';
+  fillEl.classList.toggle('bad', v > 60);
+
+  const gaugeWidth = gaugeEl.clientWidth || 600;
+  const indicatorWidth = indicatorEl.offsetWidth || 56;
+  const leftPx = (v/100) * gaugeWidth;
+  const safeLeftPx = Math.max(indicatorWidth/2, Math.min(gaugeWidth - indicatorWidth/2, leftPx));
+  const leftPct = (safeLeftPx / gaugeWidth) * 100;
+  indicatorEl.style.left = leftPct + '%';
+
+  let label = 'Good';
+  if (v > 60) label = 'Bad';
+  else if (v > 30) label = 'Okay';
+  indicatorEl.textContent = label;
+
+  valueLabel.textContent = 'Lag level: ' + v;
+  slider.value = v;
+  valDisplay.textContent = v;
 }
 
-// update numeric label while dragging (local preview)
+// Listen to Firebase
+const lagRef = ref(db, 'lag/level');
+onValue(lagRef, (snap) => {
+  let v = snap.exists() ? snap.val() : 0;
+  if (typeof v !== 'number') v = Number(snap.val()) || 0;
+  v = Math.max(0, Math.min(100, Math.round(v)));
+  updateUI(v);
+});
+
+// Slider updates
 slider.addEventListener('input', () => {
-  val.textContent = slider.value;
+  const v = parseInt(slider.value);
+  valDisplay.textContent = v;
+  updateUI(v);  // instant feedback
 });
-
-// write value when user releases the slider
-// 'change' fires when pointer is released after dragging
 slider.addEventListener('change', () => {
-  writeLagLevel(slider.value);
+  const v = parseInt(slider.value);
+  set(ref(db, 'lag/level'), v);
 });
 
-// for extra reliability on pointer/touch devices, also listen for pointerup/touchend on the slider element
-slider.addEventListener('pointerup', () => { writeLagLevel(slider.value); });
-slider.addEventListener('touchend', () => { writeLagLevel(slider.value); });
-
-// keyboard users: write on Enter when focused
-slider.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') writeLagLevel(slider.value);
+// Resize handler
+window.addEventListener('resize', () => {
+  const current = parseInt(valueLabel.textContent.replace(/\D/g,'')) || 0;
+  updateUI(current);
 });
 </script>
+
 </body>
 </html>
