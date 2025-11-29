@@ -3,44 +3,36 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lag Level Controller</title>
+<title>Lag Controller</title>
 <style>
-  html,body{height:100%;margin:0;font-family:monospace, "Courier New", monospace;background:#081017;color:#eaf5ff}
-  .panel{max-width:720px;margin:48px auto;padding:20px;border-radius:10px;background:linear-gradient(180deg,#0f1417,#0b0f12);border:3px solid #0a0d10}
-  h1{margin:0 0 14px;font-size:20px}
-  .controller{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-  .slider-wrap{flex:1;min-width:240px}
+  /* Minimal extracted styles (transparent background) */
+  *{box-sizing:border-box}
+  :root{--primary:#6366f1;--text:#eaf5ff}
+  html,body{height:100%;margin:0;background:transparent;font-family:monospace, "Courier New", monospace;color:var(--text)}
+  .panel{max-width:720px;margin:20px auto;padding:12px;border-radius:8px;background:transparent}
+  h1{margin:0 0 12px;font-size:18px;font-weight:700}
+  .controller{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .slider-wrap{flex:1;min-width:220px}
   input[type="range"]{width:100%}
-  .value{min-width:100px;text-align:center;font-weight:700;font-size:18px}
-  .buttons{margin-top:12px;display:flex;gap:8px}
-  button{padding:8px 12px;border-radius:6px;border:0;background:#2f6fa6;color:white;font-weight:700;cursor:pointer}
-  button.secondary{background:#6b6b6b}
+  .value{min-width:64px;text-align:center;font-weight:700;font-size:16px}
+  .btn{padding:8px 12px;border-radius:8px;border:0;background:var(--primary);color:white;cursor:pointer;font-weight:700}
   .note{margin-top:12px;color:#b8c4c9;font-size:13px}
 </style>
 </head>
 <body>
   <div class="panel">
     <h1>Lag Level Controller</h1>
-
     <div class="controller">
       <div class="slider-wrap">
         <input id="slider" type="range" min="0" max="100" step="1" value="0" />
       </div>
       <div class="value" id="val">0</div>
+      <button id="writeNow" class="btn" style="display:none">Set</button>
     </div>
-
-    <div class="buttons">
-      <button id="setBtn">Set value</button>
-      <button id="snap0" class="secondary">0 (no lag)</button>
-      <button id="snap50" class="secondary">50</button>
-      <button id="snap100" class="secondary">100 (max)</button>
-    </div>
-
-    <div class="note">Changes update Firebase in real time and will update all connected displays. Use this for testing.</div>
+    <div class="note">Drag the slider and release (let go) to update the live display.</div>
   </div>
 
 <script type="module">
-// ---------- FIREBASE CONFIG ----------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
@@ -58,41 +50,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ---------- DOM ----------
 const slider = document.getElementById('slider');
 const val = document.getElementById('val');
-const setBtn = document.getElementById('setBtn');
-const snap0 = document.getElementById('snap0');
-const snap50 = document.getElementById('snap50');
-const snap100 = document.getElementById('snap100');
 
 function writeLagLevel(v){
-  // ensure number 0..100
   const n = Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
   set(ref(db, 'lag/level'), n).catch(err => {
     console.error('Write failed', err);
-    alert('Failed to write to Firebase. Check database rules and network.');
+    alert('Failed to write to Firebase. Check DB rules and network.');
   });
 }
 
-// update numeric label as slider moves (local preview)
+// update numeric label while dragging (local preview)
 slider.addEventListener('input', () => {
   val.textContent = slider.value;
 });
 
-// set button writes current slider value
-setBtn.addEventListener('click', () => {
+// write value when user releases the slider
+// 'change' fires when pointer is released after dragging
+slider.addEventListener('change', () => {
   writeLagLevel(slider.value);
 });
 
-// quick snaps
-snap0.addEventListener('click', () => { slider.value = 0; val.textContent = 0; writeLagLevel(0); });
-snap50.addEventListener('click', () => { slider.value = 50; val.textContent = 50; writeLagLevel(50); });
-snap100.addEventListener('click', () => { slider.value = 100; val.textContent = 100; writeLagLevel(100); });
+// for extra reliability on pointer/touch devices, also listen for pointerup/touchend on the slider element
+slider.addEventListener('pointerup', () => { writeLagLevel(slider.value); });
+slider.addEventListener('touchend', () => { writeLagLevel(slider.value); });
 
-// optionally write as the slider moves (uncomment to enable)
-// slider.addEventListener('change', () => writeLagLevel(slider.value));
-// slider.addEventListener('mouseup', () => writeLagLevel(slider.value));
+// keyboard users: write on Enter when focused
+slider.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') writeLagLevel(slider.value);
+});
 </script>
 </body>
 </html>
