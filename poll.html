@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Secure Realtime Poll — Name selection</title>
+    <style>
+      :root {
+        --bg: transparent;
+        --card: rgba(255, 255, 255, 0);
+        --accent: #2b6cb0;
+        --text: #0f1724;
+        --muted: #64748b;
+        --radius: 12px;
+      }
+      body {
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          Arial;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        min-height: 100vh;
+        align-items: center;
+        justify-content: center;
+        padding: 28px;
+        margin: 0;
+      }
+      .card {
+        background: var(--card);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 30px rgba(12, 23, 40, 0.08);
+        padding: 20px;
+        width: 520px;
+        max-width: 95%;
+      }
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .desc {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .name-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .name-btn {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: transparent;
+        border: 1px solid rgba(15, 23, 36, 0.06);
+        cursor: pointer;
+        font-weight: 600;
+        min-width: 84px;
+        text-align: center;
+      }
+      .name-btn.selected {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      .name-btn.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: transparent;
+        color: var(--muted);
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .choices {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 6px;
+      }
+      .choice {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 36, 0.06);
+      }
+      .label {
+        flex: 1;
+        font-weight: 600;
+      }
+      .count {
+        min-width: 48px;
+        text-align: right;
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .bar {
+        height: 10px;
+        background: rgba(15, 23, 36, 0.06);
+        border-radius: 6px;
+        overflow: hidden;
+        flex: 1;
+      }
+      .bar > i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+        border-radius: 6px;
+      }
+      .meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 12px;
+        justify-content: space-between;
+      }
+      .hidden {
+        display: none;
+      }
+      .secondary {
+        background: transparent;
+        border: 1px solid rgba(15, 23, 36, 0.06);
+        color: var(--text);
+        padding: 6px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .notice {
+        font-size: 12px;
+        color: #b45309;
+        margin-top: 8px;
+      }
+      .info {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+      .final-result {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 12px;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 36, 0.06);
+        background: rgba(43, 108, 176, 0.04);
+      }
+      .final-result h2 {
+        margin: 0;
+        font-size: 20px;
+      }
+      .counts-list {
+        display: flex;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .count-badge {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(15, 23, 36, 0.06);
+        font-weight: 700;
+      }
+      .message-box {
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .message-error {
+        background: rgba(220, 38, 38, 0.1);
+        color: #991b1b;
+        border: 1px solid rgba(220, 38, 38, 0.2);
+      }
+      .message-success {
+        background: rgba(34, 197, 94, 0.1);
+        color: #166534;
+        border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+      .message-info {
+        background: rgba(59, 130, 246, 0.1);
+        color: #1e40af;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" id="card">
+      <div class="header">
+        <h1 id="pollQuestion">Loading poll…</h1>
+        <div style="margin-left: auto" id="userInfo" class="small"></div>
+      </div>
+      <p class="desc" id="pollDesc">Choose a name, then vote. Names prevent double-voting; votes remain anonymous.</p>
+
+      <div id="messageBox" class="hidden"></div>
+
+      <div class="auth-area" id="authArea">
+        <div class="small" style="margin-bottom: 6px">
+          Choose your name (click once). Names are used only to prevent double-voting.
+        </div>
+        <div class="name-list" id="nameList"></div>
+        <div class="info" id="anonInfo">
+          This poll is still anonymous: which option a name voted for is not recorded with the name and cannot be seen
+          by Kai.
+        </div>
+      </div>
+
+      <div id="voteArea">
+        <div class="choices" id="choices"></div>
+        <div class="meta">
+          <div class="small" id="totalVotes">0 votes</div>
+        </div>
+      </div>
+
+      <div id="finalContainer" class="hidden">
+        <div class="final-result" id="finalResultBox">
+          <h2 id="finalTitle">Final deciding vote</h2>
+          <div id="finalSummary" class="small"></div>
+          <div class="counts-list" id="finalCounts"></div>
+          <div class="info" id="finalNote">Votes are anonymous; names only prevented duplicates.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Firebase SDKs (app + database) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+      /* CONFIG - replace with your project's values */
+      const firebaseConfig = {
+        apiKey: "AIzaSyAUyE4OX00qYY_QmWG6nejHM163WHbG3-o",
+        authDomain: "allforone24-7site.firebaseapp.com",
+        databaseURL: "https://allforone24-7site-default-rtdb.firebaseio.com",
+        projectId: "allforone24-7site",
+        storageBucket: "allforone24-7site.firebasestorage.app",
+        messagingSenderId: "152185189862",
+        appId: "1:152185189862:web:c5a77a054c7f6948f29227",
+        measurementId: "G-YBTBN68P48"
+      };
+      /* END CONFIG */
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.database();
+
+      const pollId = "New_Player_Join_Request";
+      const question = "Should we start a new world each year?";
+      const nameOptions = ["Kai", "Levi", "Kayden", "Felix", "Ryan", "Owen", "Aidan"];
+      const choicesList = ["Yes", "No"];
+      const TOTAL_VOTERS = nameOptions.length;
+
+      /* Poll config */
+      const pollRef = firebase.database().ref("polls/New_Player_Join_Request");
+      const namesRef = pollRef.child("names");
+      const votesRef = pollRef.child("votes");
+
+      /* DOM refs */
+      const pollQuestionEl = document.getElementById("pollQuestion");
+      const choicesEl = document.getElementById("choices");
+      const totalVotesEl = document.getElementById("totalVotes");
+      const nameListEl = document.getElementById("nameList");
+      const anonInfo = document.getElementById("anonInfo");
+      const finalContainer = document.getElementById("finalContainer");
+      const finalTitle = document.getElementById("finalTitle");
+      const finalSummary = document.getElementById("finalSummary");
+      const finalCounts = document.getElementById("finalCounts");
+      const messageBox = document.getElementById("messageBox");
+
+      pollQuestionEl.textContent = question;
+
+      /* State */
+      let selectedName = null;
+      let hasVoted = false;
+
+      /* Show message */
+      function showMessage(text, type = "info") {
+        messageBox.textContent = text;
+        messageBox.className = "message-box message-" + type;
+        messageBox.classList.remove("hidden");
+        setTimeout(() => messageBox.classList.add("hidden"), 5000);
+      }
+
+      /* Helpers for local state */
+      function setSelectedName(name) {
+        selectedName = name;
+        document.querySelectorAll(".name-btn").forEach((b) => {
+          if (b.parentElement && b.parentElement.id === "nameList") {
+            b.classList.toggle("selected", b.dataset.name === name);
+          }
+        });
+        updateUserInfo();
+      }
+
+      /* UI update */
+      function updateUserInfo() {
+        const ui = document.getElementById("userInfo");
+        if (selectedName) ui.textContent = "Selected: " + selectedName;
+        else ui.textContent = "";
+      }
+
+      /* Build name buttons */
+      nameOptions.forEach((n) => {
+        const btn = document.createElement("button");
+        btn.className = "name-btn";
+        btn.textContent = n;
+        btn.dataset.name = n;
+        btn.addEventListener("click", () => {
+          if (btn.classList.contains("disabled")) return;
+          if (selectedName === n) setSelectedName(null);
+          else setSelectedName(n);
+        });
+        nameListEl.appendChild(btn);
+      });
+
+      /* Build choice buttons */
+      const choiceDom = [];
+      choicesList.forEach((c, i) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "choice";
+        const lbl = document.createElement("div");
+        lbl.className = "label";
+        lbl.textContent = c;
+        const barWrap = document.createElement("div");
+        barWrap.className = "bar";
+        const bar = document.createElement("i");
+        barWrap.appendChild(bar);
+        const count = document.createElement("div");
+        count.className = "count";
+        count.textContent = "0";
+        const btn = document.createElement("button");
+        btn.className = "name-btn";
+        btn.textContent = "Vote";
+        btn.addEventListener("click", () => castVote(i));
+        wrapper.append(lbl, barWrap, count, btn);
+        choicesEl.appendChild(wrapper);
+        choiceDom.push({ wrapper, bar, count, btn });
+      });
+
+      /* show/hide vote buttons */
+      function hideVoteButtons() {
+        choiceDom.forEach((c) => (c.btn.style.display = "none"));
+      }
+      function showVoteButtons() {
+        choiceDom.forEach((c) => (c.btn.style.display = ""));
+      }
+
+      /* Cast vote: claim name atomically then push anonymous vote */
+      async function castVote(choiceIndex) {
+        if (finalContainer.classList.contains("hidden") === false) {
+          showMessage("Poll is complete.", "error");
+          return;
+        }
+
+        if (!selectedName) {
+          showMessage("Please choose your name before voting.", "error");
+          return;
+        }
+
+        if (hasVoted) {
+          showMessage("You have already voted. Only one vote per name.", "error");
+          hideVoteButtons();
+          return;
+        }
+
+        const nameKey = encodeURIComponent(selectedName);
+        const nameRef = namesRef.child(nameKey);
+
+        const claim = await new Promise((resolve) => {
+          nameRef.transaction(
+            (current) => {
+              if (current === null) {
+                return { claimed: true, ts: Date.now() };
+              }
+              return;
+            },
+            (err, committed, snap) => resolve({ err, committed, snap: snap && snap.val() })
+          );
+        });
+
+        if (claim.err) {
+          showMessage("Error claiming name: " + (claim.err.message || claim.err), "error");
+          return;
+        }
+        if (!claim.committed) {
+          showMessage("That name has already been used to vote. Choose a different name.", "error");
+          return;
+        }
+
+        try {
+          await votesRef.push({ choice: choiceIndex, ts: Date.now() });
+        } catch (e) {
+          showMessage("Vote push failed: " + (e && e.message ? e.message : e), "error");
+          return;
+        }
+
+        hasVoted = true;
+        hideVoteButtons();
+        showMessage(
+          "Vote recorded successfully. Votes are anonymous; names are only used to stop repeat votes.",
+          "success"
+        );
+      }
+
+      /* Realtime vote updates */
+      votesRef.on("value", (snap) => {
+        const data = snap.val() || {};
+        const counts = new Array(choicesList.length).fill(0);
+        let total = 0;
+        for (const k in data) {
+          const rec = data[k];
+          if (rec && typeof rec.choice !== "undefined" && rec.choice >= 0 && rec.choice < choicesList.length) {
+            counts[rec.choice]++;
+            total++;
+          }
+        }
+        for (let i = 0; i < choicesList.length; i++) {
+          const e = choiceDom[i];
+          if (!e) continue;
+          e.count.textContent = counts[i];
+          e.bar.style.width = total ? Math.round((counts[i] / total) * 100) + "%" : "0%";
+        }
+        totalVotesEl.textContent = total + (total === 1 ? " vote" : " votes");
+
+        checkFinal(total, counts);
+      });
+
+      /* Realtime names update — disable used names visually */
+      namesRef.on("value", (snap) => {
+        const claimed = snap.val() || {};
+        document.querySelectorAll(".name-btn").forEach((btn) => {
+          const n = btn.dataset.name;
+          if (!btn.parentElement || btn.parentElement.id !== "nameList") return;
+          const encoded = encodeURIComponent(n);
+          const isClaimed = !!(claimed && claimed[encoded]);
+          btn.classList.toggle("disabled", isClaimed);
+          btn.disabled = isClaimed;
+          if (isClaimed && selectedName === n && !hasVoted) {
+            setSelectedName(null);
+          }
+          if (isClaimed && !btn.dataset._marked) {
+            btn.dataset._marked = "1";
+            btn.textContent = n + " (used)";
+          } else if (!isClaimed && btn.dataset._marked) {
+            delete btn.dataset._marked;
+            btn.textContent = n;
+          }
+        });
+      });
+
+      /* Final check: when votes reach TOTAL_VOTERS show final deciding vote */
+      function checkFinal(totalVotes, counts) {
+        if (totalVotes >= TOTAL_VOTERS) {
+          showFinalDecision(counts);
+        }
+      }
+
+      /* Show final decision */
+      function showFinalDecision(counts) {
+        document.getElementById("voteArea").classList.add("hidden");
+        document.getElementById("authArea").classList.add("hidden");
+
+        let max = -1;
+        let winners = [];
+        counts.forEach((c, i) => {
+          if (c > max) {
+            max = c;
+            winners = [i];
+          } else if (c === max) {
+            winners.push(i);
+          }
+        });
+
+        let summaryText;
+        if (max <= 0) {
+          summaryText = "No votes were cast.";
+          finalTitle.textContent = "Final deciding vote";
+        } else if (winners.length === 1) {
+          summaryText = "Final deciding vote: " + choicesList[winners[0]];
+          finalTitle.textContent = "Final deciding vote";
+        } else {
+          summaryText = "Result: Tie";
+          finalTitle.textContent = "Final result (tie)";
+        }
+
+        finalSummary.textContent = summaryText;
+
+        finalCounts.innerHTML = "";
+        counts.forEach((c, i) => {
+          const b = document.createElement("div");
+          b.className = "count-badge";
+          b.textContent = `${choicesList[i]}: ${c}`;
+          finalCounts.appendChild(b);
+        });
+
+        finalContainer.classList.remove("hidden");
+        hideVoteButtons();
+      }
+
+      /* Initial UI */
+      document.getElementById("pollDesc").textContent =
+        `Choose a name, then vote. ${TOTAL_VOTERS} voters total. Votes remain anonymous.`;
+      showVoteButtons();
+    </script>
+  </body>
+</html>

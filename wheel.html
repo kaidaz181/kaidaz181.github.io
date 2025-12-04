@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tie Breaker Randomizer</title>
+<style>
+:root{
+  --bg:#c6c6c6;
+  --card:#1e293b;
+  --accent:#3b82f6;
+  --text:#f1f5f9;
+  --muted:#94a3b8;
+  --success:#22c55e;
+  --danger:#ef4444;
+}
+body{
+  font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  margin:0;
+}
+.container{
+  text-align:center;
+  max-width:600px;
+  width:100%;
+}
+h1{
+  font-size:32px;
+  margin:0 0 12px;
+  background:linear-gradient(135deg, #3b82f6, #8b5cf6);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.subtitle{
+  color:var(--muted);
+  font-size:16px;
+  margin-bottom:40px;
+  color: black;
+}
+.wheel-container{
+  position:relative;
+  width:400px;
+  height:400px;
+  margin:0 auto 40px;
+  max-width:90vw;
+  max-height:90vw;
+}
+.wheel{
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5), 0 0 0 12px var(--card), 0 0 0 14px var(--accent);
+  transition:transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.segment{
+  position:absolute;
+  width:50%;
+  height:50%;
+  transform-origin:100% 100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  font-weight:700;
+  color:#fff;
+  text-shadow:2px 2px 4px rgba(0,0,0,0.3);
+}
+.arrow{
+  position:absolute;
+  top:-20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:0;
+  height:0;
+  border-left:20px solid transparent;
+  border-right:20px solid transparent;
+  border-top:40px solid var(--accent);
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  z-index:10;
+}
+.center-circle{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%, -50%);
+  width:80px;
+  height:80px;
+  background:var(--card);
+  border-radius:50%;
+  border:4px solid var(--accent);
+  z-index:5;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+}
+.btn{
+  padding:16px 48px;
+  font-size:18px;
+  font-weight:700;
+  background:linear-gradient(135deg, #3b82f6, #8b5cf6);
+  border:none;
+  border-radius:12px;
+  color:#fff;
+  cursor:pointer;
+  transition:transform 0.2s, box-shadow 0.2s;
+  box-shadow:0 4px 20px rgba(59,130,246,0.4);
+  margin:8px;
+}
+.btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 30px rgba(59,130,246,0.6);
+}
+.btn:active:not(:disabled){
+  transform:translateY(0);
+}
+.btn:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+.btn-danger{
+  background:linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow:0 4px 20px rgba(239,68,68,0.4);
+}
+.btn-danger:hover:not(:disabled){
+  box-shadow:0 6px 30px rgba(239,68,68,0.6);
+}
+.result{
+  margin-top:30px;
+  padding:24px;
+  background:var(--card);
+  border-radius:12px;
+  border:2px solid var(--accent);
+  opacity:0;
+  transform:scale(0.9);
+  transition:opacity 0.5s, transform 0.5s;
+}
+.result.show{
+  opacity:1;
+  transform:scale(1);
+}
+.result h2{
+  margin:0 0 8px;
+  font-size:28px;
+}
+.result p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px;
+}
+.winner-text{
+  font-size:48px;
+  font-weight:900;
+  margin:16px 0;
+  text-transform:uppercase;
+  letter-spacing:2px;
+}
+.status{
+  color:var(--muted);
+  font-size:14px;
+  margin-top:20px;
+  font-style:italic;
+  color: black;
+}
+.modal{
+  display:none;
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.8);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+}
+.modal.show{
+  display:flex;
+}
+.modal-content{
+  background:var(--card);
+  padding:32px;
+  border-radius:16px;
+  max-width:400px;
+  width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-content h3{
+  margin:0 0 20px;
+  font-size:24px;
+}
+.modal-content input{
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  border:2px solid var(--muted);
+  border-radius:8px;
+  background:var(--bg);
+  color:var(--text);
+  margin-bottom:20px;
+  box-sizing:border-box;
+}
+.modal-content input:focus{
+  outline:none;
+  border-color:var(--accent);
+}
+.modal-buttons{
+  display:flex;
+  gap:12px;
+}
+.modal-buttons button{
+  flex:1;
+  padding:12px;
+  font-size:16px;
+  font-weight:600;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:transform 0.2s;
+}
+.modal-buttons button:hover{
+  transform:translateY(-2px);
+}
+.error-msg{
+  color:var(--danger);
+  font-size:14px;
+  margin-top:8px;
+  min-height:20px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎲 Tie Breaker</h1>
+  <p class="subtitle">When votes are tied, let fate decide!</p>
+  
+  <div class="wheel-container">
+    <div class="arrow"></div>
+    <div class="wheel" id="wheel"></div>
+    <div class="center-circle"></div>
+  </div>
+  
+  <button class="btn" id="spinBtn">Start Spin (Admin)</button>
+  
+  <div class="status" id="status">Waiting for admin to start spin...</div>
+  
+  <div class="result" id="result">
+    <h2>🎉 Winner</h2>
+    <div class="winner-text" id="winnerText">YES</div>
+    <p>The tie has been broken!</p>
+    <button class="btn btn-danger" id="respinBtn">Spin Again</button>
+  </div>
+</div>
+
+<div class="modal" id="passwordModal">
+  <div class="modal-content">
+    <h3>🔐 Admin Authentication</h3>
+    <input type="password" id="passwordInput" placeholder="Enter admin password" />
+    <div class="error-msg" id="errorMsg"></div>
+    <div class="modal-buttons">
+      <button class="btn" style="background:#64748b" id="cancelBtn">Cancel</button>
+      <button class="btn" id="confirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-database-compat.min.js"></script>
+
+<script>
+// ====== FIREBASE CONFIGURATION ======
+const firebaseConfig = {
+  apiKey: "AIzaSyAUyE4OX00qYY_QmWG6nejHM163WHbG3-o",
+  authDomain: "allforone24-7site.firebaseapp.com",
+  databaseURL: "https://allforone24-7site-default-rtdb.firebaseio.com",
+  projectId: "allforone24-7site",
+  storageBucket: "allforone24-7site.firebasestorage.app",
+  messagingSenderId: "152185189862",
+  appId: "1:152185189862:web:c5a77a054c7f6948f29227",
+  measurementId: "G-YBTBN68P48"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const tiebreakerRef = database.ref('tiebreaker');
+
+// ====== EASY CONFIGURATION ======
+// Just add or remove options here! The wheel will automatically adjust.
+const OPTIONS = [
+  { label: "Yes", color: "#22c55e" },
+  { label: "No", color: "#ef4444" }
+];
+
+// Admin password
+const ADMIN_PASSWORD = "changeme123";
+
+// You can easily add more options like this:
+// const OPTIONS = [
+//   { label: "Yes", color: "#22c55e" },
+//   { label: "No", color: "#ef4444" },
+//   { label: "Maybe", color: "#f59e0b" },
+//   { label: "Later", color: "#8b5cf6" }
+// ];
+// ================================
+
+const wheel = document.getElementById('wheel');
+const result = document.getElementById('result');
+const winnerText = document.getElementById('winnerText');
+const status = document.getElementById('status');
+const spinBtn = document.getElementById('spinBtn');
+const respinBtn = document.getElementById('respinBtn');
+const passwordModal = document.getElementById('passwordModal');
+const passwordInput = document.getElementById('passwordInput');
+const errorMsg = document.getElementById('errorMsg');
+const cancelBtn = document.getElementById('cancelBtn');
+const confirmBtn = document.getElementById('confirmBtn');
+
+let isSpinning = false;
+let hasSpun = false;
+let currentResult = null;
+
+// Load saved result from Firebase
+function loadSavedResult() {
+  tiebreakerRef.once('value').then(snapshot => {
+    const data = snapshot.val();
+    if (data && data.winner) {
+      currentResult = data;
+      displayResult(data.winner, false);
+      status.textContent = 'Last saved result. Admin can spin again if needed.';
+      spinBtn.style.display = 'none';
+    }
+  }).catch(err => {
+    console.error('Error loading result:', err);
+  });
+}
+
+// Save result to Firebase
+function saveResult(winner) {
+  const resultData = {
+    winner: winner,
+    timestamp: Date.now(),
+    date: new Date().toISOString()
+  };
+  
+  tiebreakerRef.set(resultData).then(() => {
+    currentResult = resultData;
+    console.log('Result saved to Firebase');
+  }).catch(err => {
+    console.error('Error saving result:', err);
+    status.textContent = 'Error saving result. Please try again.';
+  });
+}
+
+// Display result
+function displayResult(winner, animate = true) {
+  winnerText.textContent = winner;
+  const option = OPTIONS.find(opt => opt.label === winner);
+  if (option) {
+    winnerText.style.color = option.color;
+  }
+  
+  if (animate) {
+    setTimeout(() => {
+      result.classList.add('show');
+    }, 100);
+  } else {
+    result.classList.add('show');
+  }
+}
+
+// Build the wheel segments
+function buildWheel() {
+  wheel.innerHTML = '';
+  const segmentAngle = 360 / OPTIONS.length;
+  
+  OPTIONS.forEach((option, index) => {
+    const segment = document.createElement('div');
+    segment.className = 'segment';
+    segment.style.background = option.color;
+    segment.textContent = option.label;
+    
+    // Calculate rotation for each segment
+    const rotation = segmentAngle * index;
+    segment.style.transform = `rotate(${rotation}deg) skew(${90 - segmentAngle}deg)`;
+    
+    // Add text container for proper rotation
+    const textSpan = document.createElement('span');
+    textSpan.textContent = option.label;
+    textSpan.style.display = 'block';
+    textSpan.style.transform = `skew(${-(90 - segmentAngle)}deg) rotate(${segmentAngle/2}deg)`;
+    textSpan.style.transformOrigin = 'center';
+    
+    segment.innerHTML = '';
+    segment.appendChild(textSpan);
+    
+    wheel.appendChild(segment);
+  });
+}
+
+// Spin the wheel
+function spin() {
+  if (isSpinning) return;
+  
+  isSpinning = true;
+  result.classList.remove('show');
+  spinBtn.style.display = 'none';
+  status.textContent = 'Spinning...';
+  
+  // Random spins between 5-8 full rotations plus random angle
+  const minSpins = 5;
+  const maxSpins = 8;
+  const spins = minSpins + Math.random() * (maxSpins - minSpins);
+  
+  // Calculate winning index
+  const winningIndex = Math.floor(Math.random() * OPTIONS.length);
+  const segmentAngle = 360 / OPTIONS.length;
+  
+  // Calculate final rotation (spin to winning segment with arrow at top)
+  const winningSegmentCenter = (winningIndex * segmentAngle) + (segmentAngle / 2);
+  const totalRotation = (spins * 360) + winningSegmentCenter;
+  
+  // Apply rotation
+  wheel.style.transform = `rotate(${totalRotation}deg)`;
+  
+  // Show result after animation
+  setTimeout(() => {
+    const winner = OPTIONS[winningIndex].label;
+    displayResult(winner, true);
+    saveResult(winner);
+    status.textContent = 'Decision made and saved! Admin can spin again if needed.';
+    hasSpun = true;
+    
+    setTimeout(() => {
+      isSpinning = false;
+      // Reset rotation for next spin (maintain visual position)
+      wheel.style.transition = 'none';
+      const normalizedRotation = totalRotation % 360;
+      wheel.style.transform = `rotate(${normalizedRotation}deg)`;
+      setTimeout(() => {
+        wheel.style.transition = 'transform 4s cubic-bezier(0.25, 0.1, 0.25, 1)';
+      }, 50);
+    }, 1000);
+  }, 4000);
+}
+
+// Show password modal
+function showPasswordModal() {
+  passwordModal.classList.add('show');
+  passwordInput.value = '';
+  errorMsg.textContent = '';
+  passwordInput.focus();
+}
+
+// Hide password modal
+function hidePasswordModal() {
+  passwordModal.classList.remove('show');
+  passwordInput.value = '';
+  errorMsg.textContent = '';
+}
+
+// Check password and respin
+function checkPasswordAndRespin() {
+  const enteredPassword = passwordInput.value;
+  
+  if (enteredPassword === ADMIN_PASSWORD) {
+    hidePasswordModal();
+    status.textContent = 'Admin respin initiated...';
+    setTimeout(() => {
+      spin();
+    }, 500);
+  } else {
+    errorMsg.textContent = 'Incorrect password. Please try again.';
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+}
+
+// Event listeners
+spinBtn.addEventListener('click', showPasswordModal);
+respinBtn.addEventListener('click', showPasswordModal);
+cancelBtn.addEventListener('click', hidePasswordModal);
+confirmBtn.addEventListener('click', checkPasswordAndRespin);
+
+passwordInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    checkPasswordAndRespin();
+  }
+});
+
+// Close modal on background click
+passwordModal.addEventListener('click', (e) => {
+  if (e.target === passwordModal) {
+    hidePasswordModal();
+  }
+});
+
+// Initialize
+buildWheel();
+loadSavedResult();
+
+// Listen for changes from other users
+tiebreakerRef.on('value', snapshot => {
+  const data = snapshot.val();
+  if (data && data.winner && !isSpinning) {
+    // Only update if it's different from current
+    if (!currentResult || currentResult.timestamp !== data.timestamp) {
+      currentResult = data;
+      displayResult(data.winner, false);
+      status.textContent = 'Result updated. Admin can spin again if needed.';
+      spinBtn.style.display = 'none';
+    }
+  }
+});
+</script>
+</body>
+</html>
